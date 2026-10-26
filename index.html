@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="theme-color" content="#0f1419"/>
+<title>NIU BMS USB</title>
+<style>
+:root{--bg:#0f1419;--card:#1a2332;--line:#2a3548;--text:#e7ecf3;--muted:#8b9cb3;--accent:#3b82f6;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+.wrap{max-width:960px;margin:0 auto;padding:1rem 1rem 2rem}
+h1{font-size:1.35rem;font-weight:600;margin:0 0 .25rem}
+.sub{color:var(--muted);font-size:.9rem;margin:0 0 1rem}
+.bar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.grid{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:1rem}
+.card{background:var(--card);border-radius:10px;padding:.85rem 1rem;border:1px solid var(--line)}
+.card .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.card .val{font-size:1.35rem;font-weight:600;margin-top:.2rem}
+.card .unit{font-size:.85rem;color:var(--muted);font-weight:400}
+h2{font-size:1rem;margin:1.25rem 0 .5rem;color:var(--muted);font-weight:600}
+.cell-table{width:100%;max-width:22rem;border-collapse:collapse;font-size:.92rem;background:var(--card);border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+.cell-table th,.cell-table td{padding:.45rem .75rem;text-align:left;border-bottom:1px solid var(--line)}
+.cell-table th{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:#151c28}
+.cell-table tr:last-child td{border-bottom:0}
+.cell-table td:first-child{color:var(--muted);width:2.5rem}
+.cell-table td:last-child{font-weight:600;font-variant-numeric:tabular-nums}
+.cell-table tr.cell-min td{background:rgba(6,182,212,.12)}.cell-table tr.cell-min td:last-child{color:#22d3ee}
+.cell-table tr.cell-max td{background:rgba(234,179,8,.12)}.cell-table tr.cell-max td:last-child{color:#facc15}
+.cell-table .tag{font-size:.72rem;font-weight:600;margin-left:.35rem}
+.cell-summary{margin-top:.75rem;max-width:36rem;padding:.65rem .85rem;background:var(--card);border-radius:8px;border:1px solid var(--line);color:#d8b4fe;font-weight:500;font-size:.88rem;font-variant-numeric:tabular-nums}
+.chart{background:var(--card);border-radius:10px;border:1px solid var(--line);padding:.6rem .75rem .4rem;margin-bottom:.75rem}
+.chart .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;gap:.75rem;flex-wrap:wrap}
+.chart .now{margin-left:auto;color:var(--text);font-weight:600;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}
+.chart canvas{display:block;width:100%;height:190px}
+.key{display:inline-block;width:.7rem;height:.2rem;border-radius:2px;vertical-align:middle;margin-right:.25rem}
+.meta{font-size:.85rem;color:var(--muted)}.err{color:var(--bad)}.stale{color:var(--warn)}.okc{color:var(--ok)}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:.5rem 1rem;font-size:.9rem;cursor:pointer}
+button:disabled{opacity:.5}
+select,button.sec{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem;font-size:.85rem}
+details{margin-top:1rem}summary{cursor:pointer;color:var(--muted);font-size:.85rem}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.6rem;font-size:.75rem;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>NIU battery BMS</h1>
+<p class="sub">USB-RS485 dongle (CP2102) via WebUSB · 9600 8E1 · N1S protocol</p>
+
+<div class="bar">
+<button id="connect" type="button">Connect dongle</button>
+<button id="disconnect" class="sec hidden" type="button">Disconnect</button>
+<span id="status" class="meta">Not connected</span>
+</div>
+<p id="unsupported" class="err hidden">This browser has no WebUSB. Use Chrome on Android (with a USB OTG adapter) or desktop Chrome/Edge.</p>
+
+<div class="grid" id="metrics"></div>
+<h2>Cell voltages</h2>
+<div id="cells"><p class="meta">Connect the dongle to the phone, then tap “Connect dongle”.</p></div>
+
+<h2>Voltage over time</h2>
+<div class="bar">
+<select id="bat" title="Battery (BMS serial)"></select>
+<select id="range"><option value="900000">15 min</option><option value="3600000" selected>1 h</option><option value="21600000">6 h</option><option value="0">All</option></select>
+<button class="sec" id="clr" type="button">Clear history</button>
+<span class="meta" id="histInfo"></span>
+</div>
+<div class="chart"><div class="lbl"><span>Pack voltage (V)</span><span><i class="key" style="background:#3b82f6"></i>BMS</span><span><i class="key" style="background:#22c55e"></i>Σ cells</span><span class="now" id="nowPack"></span></div><canvas id="chPack"></canvas></div>
+<div class="chart"><div class="lbl"><span>Cell voltages (V)</span><span id="cellKey"></span><span class="now" id="nowCells"></span></div><canvas id="chCells"></canvas></div>
+<div class="chart"><div class="lbl"><span>Cell Δ (mV)</span><span><i class="key" style="background:var(--ok)"></i>&lt;50 good</span><span><i class="key" style="background:var(--warn)"></i>50–100 med</span><span><i class="key" style="background:var(--bad)"></i>&gt;100 bad</span><span class="now" id="nowDelta"></span></div><canvas id="chDelta"></canvas></div>
+
+<h2>Identity</h2>
+<p class="meta" id="identity">—</p>
+<details><summary>Raw payloads (hex)</summary><pre id="raw">—</pre></details>
+</div>
+
+<script>
+// ---------- N1S protocol (same as scripts/niu_bms.py) ----------
+const PACK_CELLS=17,CELL_V_EMPTY=3.0,CELL_V_FULL=4.2;
+const DGOOD=0.05,DMED=0.1; // balance thresholds, same as niu_bms.py
+const POLL_MS=3000;
+const PREFIX=[0xfe,0xfe,0xfe,0xfe,0x68,0x31,0xce,0x68,0x02,0x02];
+const HDR=[0x68,0x31,0xce,0x68,0x82];
+const CMD={
+  pack:[0x60,0x42,0x75],cells:[0x6f,0x5b,0x9d],serial:[0x3c,0x43,0x52],
+  hwsw:[0x35,0x35,0x3d],cycles:[0x5c,0x46,0x75]
+};
+// Each byte is masked with +0x33 (mod 256): unmask per byte, never per word
+const unmask=b=>(b-0x33)&0xff;
+const u16=(p,o)=>(unmask(p[o])<<8)|unmask(p[o+1]);
+const s16=(p,o)=>{const w=u16(p,o);return w&0x8000?w-0x10000:w};
+
+function parseFrame(rx){
+  for(let i=0;i+HDR.length+2<rx.length;i++){
+    let m=true;for(let k=0;k<HDR.length;k++)if(rx[i+k]!==HDR[k]){m=false;break}
+    if(!m)continue;
+    const ln=rx[i+HDR.length],start=i+HDR.length+1,end=start+ln+2;
+    if(end>rx.length||rx[end-1]!==0x16)continue;
+    return rx.slice(start,end);
+  }
+  return null;
+}
+function decodePack(p){
+  const o={pack_v:null,current_a:null,soc:null,time_remain:null};
+  if(!p||p.length<8)return o;
+  o.pack_v=u16(p,0)/10;
+  o.current_a=s16(p,2)/10;
+  let soc=(p[4]===0x33&&p.length>6&&p[6]!==0x33)?p[6]-0x33:p[4]-0x33;
+  if(soc<0||soc>100){soc=null;for(let i=2;i<Math.min(14,p.length);i++){const s=p[i]-0x33;if(s>=0&&s<=100){soc=s;break}}}
+  o.soc=soc;
+  if(p.length>6){const tr=p[6]-0x33;if(tr>=0&&tr<=200)o.time_remain=tr/10}
+  return o;
+}
+function decodeCells(p){
+  const out=[];
+  for(let i=0;i<PACK_CELLS;i++){
+    if(!p||i*2+2>p.length){out.push(null);continue}
+    const v=u16(p,i*2)/1000;
+    out.push(v<2.5||v>4.35?null:v);
+  }
+  return out;
+}
+function decodeSerial(p){
+  if(!p)return null;
+  let s='';for(let i=0;i<Math.min(16,p.length);i++){const c=p[i]-0x33;s+=(c>=32&&c<=126)?String.fromCharCode(c):'?'}
+  s=s.replace(/^\?+|\?+$/g,'');
+  return /^[A-Za-z0-9]{8,16}$/.test(s)?s:null;
+}
+function decodeHwsw(p){
+  if(!p||p.length<2)return{sw:null,hw:null};
+  const f=b=>{const v=b-0x33;return `${Math.floor(v/16)}.${v%16}`};
+  return{sw:f(p[0]),hw:f(p[1])};
+}
+function decodeCycles(p){
+  if(!p||p.length<4)return null;
+  const c=u16(p,2);return c>50000?null:c;
+}
+function collectTemps(...pls){
+  let best=[null,null,null,null],bc=-1;
+  for(const p of pls){if(!p)continue;
+    for(const st of[11,7,15]){if(st+4>p.length)continue;
+      const slot=[];for(let i=0;i<4;i++){const t=p[st+i]-0x33;slot.push(t>=10&&t<=60?t:null)}
+      const n=slot.filter(t=>t!=null).length;if(n>bc){bc=n;best=slot}}}
+  return best;
+}
+const hex=p=>p?Array.from(p,b=>b.toString(16).padStart(2,'0')).join(' '):'—';
+
+// ---------- CP210x over WebUSB ----------
+// Vendor requests from Silicon Labs AN571
+class Cp210x{
+  constructor(dev){this.dev=dev;this.buf=[];this.reading=false}
+  async open(){
+    const d=this.dev;
+    await d.open();
+    if(!d.configuration)await d.selectConfiguration(1);
+    const itf=d.configuration.interfaces[0];
+    this.ifn=itf.interfaceNumber;
+    await d.claimInterface(this.ifn);
+    const eps=itf.alternate.endpoints;
+    this.epIn=eps.find(e=>e.direction==='in').endpointNumber;
+    this.epOut=eps.find(e=>e.direction==='out').endpointNumber;
+    await this.ctl(0x00,0x0001);                // IFC_ENABLE
+    const b=new ArrayBuffer(4);new DataView(b).setUint32(0,9600,true);
+    await this.ctl(0x1e,0,b);                   // SET_BAUDRATE 9600
+    await this.ctl(0x03,0x0800|0x0020|0x0000);  // SET_LINE_CTL: 8 data, even parity, 1 stop
+    await this.ctl(0x07,0x0303);                // SET_MHS: DTR+RTS on
+    await this.ctl(0x12,0x000f);                // PURGE rx/tx
+    this.readLoop();
+  }
+  ctl(request,value,data){
+    const s={requestType:'vendor',recipient:'interface',request,value,index:this.ifn};
+    return data?this.dev.controlTransferOut(s,data):this.dev.controlTransferOut(s);
+  }
+  async readLoop(){
+    this.reading=true;
+    while(this.reading){
+      try{
+        const r=await this.dev.transferIn(this.epIn,64);
+        if(r.data)for(let i=0;i<r.data.byteLength;i++)this.buf.push(r.data.getUint8(i));
+      }catch(e){if(this.reading){this.reading=false;this.onlost&&this.onlost(e)}break}
+    }
+  }
+  write(bytes){return this.dev.transferOut(this.epOut,new Uint8Array(bytes))}
+  async close(){
+    this.reading=false;
+    try{await this.ctl(0x00,0x0000)}catch(e){}
+    try{await this.dev.releaseInterface(this.ifn)}catch(e){}
+    try{await this.dev.close()}catch(e){}
+  }
+}
+const CP210X_FILTERS=[{vendorId:0x10c4,productId:0xea60},{vendorId:0x10c4,productId:0xea70},{vendorId:0x10c4,productId:0xea71}];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+let port=null,polling=false,lastOk=null,prevSerial=null,prevPollOk=false,wakeLock=null;
+
+async function transact(cmd,timeoutMs=1200){
+  port.buf.length=0;
+  await port.write([...PREFIX,...cmd,0x16]);
+  const t0=performance.now();
+  while(performance.now()-t0<timeoutMs){
+    await sleep(25);
+    const pl=parseFrame(port.buf);
+    if(pl)return pl;
+  }
+  return null;
+}
+
+async function readBms(){
+  const raw={};
+  for(const k of Object.keys(CMD)){
+    raw[k]=await transact(CMD[k]);
+    await sleep(40);
+    if(k==='pack'&&!raw.pack)break; // no reply: don't wait on the rest
+  }
+  const j={ok:!!(raw.pack&&raw.cells),t:Date.now(),raw};
+  if(!j.ok){j.error=raw.pack?'cell read failed':'no reply from BMS (check A/B/GND on the battery plug)';return j}
+  Object.assign(j,decodePack(raw.pack));
+  const cv=decodeCells(raw.cells);
+  j.cells=cv.map((v,i)=>({n:i+1,v,valid:v!=null}));
+  const vals=cv.filter(v=>v!=null);
+  j.cell_sum=vals.reduce((a,b)=>a+b,0);
+  j.v_min=Math.min(...vals);j.v_max=Math.max(...vals);
+  j.cell_delta=j.v_max-j.v_min;
+  j.soc_est=Math.max(0,Math.min(100,(j.v_min-CELL_V_EMPTY)/(CELL_V_FULL-CELL_V_EMPTY)*100));
+  j.temps=collectTemps(raw.pack,raw.cycles).filter(t=>t!=null);
+  j.cycles=decodeCycles(raw.cycles);
+  Object.assign(j,decodeHwsw(raw.hwsw));
+  // A battery swap needs an unplug, which fails at least one poll: only then may the serial change unseen
+  j.serial_bms=decodeSerial(raw.serial)||(prevPollOk?prevSerial:null);
+  return j;
+}
+
+async function pollLoop(){
+  polling=true;
+  while(polling&&port){
+    const t0=Date.now();
+    let j;
+    try{j=await readBms()}catch(e){j={ok:false,error:'USB error: '+e.message,t:Date.now()}}
+    if(!polling)break;
+    prevPollOk=j.ok;
+    if(j.ok){prevSerial=j.serial_bms;lastOk=j;addHist(j)}
+    render(j);
+    await sleep(Math.max(200,POLL_MS-(Date.now()-t0)));
+  }
+}
+
+async function connect(dev){
+  if(port)return;
+  setStatus('Opening dongle…');
+  const p=new Cp210x(dev);
+  try{await p.open()}catch(e){
+    setStatus(`<span class="err">Could not open dongle: ${e.message}</span>`);
+    try{await dev.close()}catch(_){}
+    return;
+  }
+  port=p;
+  p.onlost=()=>disconnect('Dongle unplugged');
+  document.getElementById('connect').classList.add('hidden');
+  document.getElementById('disconnect').classList.remove('hidden');
+  setStatus('Connected · reading BMS…');
+  keepAwake();
+  pollLoop();
+}
+async function disconnect(msg){
+  polling=false;
+  const p=port;port=null;prevPollOk=false;
+  if(p)await p.close();
+  releaseAwake();
+  document.getElementById('connect').classList.remove('hidden');
+  document.getElementById('disconnect').classList.add('hidden');
+  setStatus(msg||'Not connected');
+}
+async function keepAwake(){
+  try{if('wakeLock' in navigator&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.onrelease=()=>{wakeLock=null}}}catch(e){}
+}
+function releaseAwake(){try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&port)keepAwake()});
+
+// ---------- UI ----------
+const fmt=(v,d)=>v==null||Number.isNaN(v)?'—':Number(v).toFixed(d);
+const setStatus=h=>{document.getElementById('status').innerHTML=h};
+function rateDelta(d){
+  if(d==null)return null;
+  if(d<DGOOD)return{k:'GOOD',c:'var(--ok)',h:'cells well balanced'};
+  if(d<=DMED)return{k:'MED',c:'var(--warn)',h:'slight imbalance, let the BMS balance at full charge'};
+  return{k:'BAD',c:'var(--bad)',h:'imbalance, check the weakest cell'};
+}
+function renderCells(j){
+  const cells=(j.cells||[]).filter(c=>c.valid);
+  if(!cells.length)return'<p class="meta">No cell data</p>';
+  const lo=j.v_min,hi=j.v_max,eps=0.0006;
+  const rows=(j.cells||[]).map(c=>{
+    if(!c.valid)return `<tr><td>${c.n}</td><td>—</td></tr>`;
+    let cls='',tag='';
+    if(Math.abs(c.v-lo)<eps){cls='cell-min';tag='<span class="tag">min</span>'}
+    else if(Math.abs(c.v-hi)<eps){cls='cell-max';tag='<span class="tag">max</span>'}
+    return `<tr class="${cls}"><td>${c.n}</td><td>${fmt(c.v,3)} V ${tag}</td></tr>`;
+  }).join('');
+  const r=rateDelta(j.cell_delta);
+  const weak=cells.find(c=>Math.abs(c.v-lo)<eps);
+  const hint=r.k==='BAD'&&weak?`imbalance, check weakest cell #${weak.n}`:r.h;
+  const sum=`<div class="cell-summary">Δ ${fmt(j.cell_delta,3)} V (min ${fmt(lo,3)} V → max ${fmt(hi,3)} V) · Sum ${fmt(j.cell_sum,2)} V · Battery ${fmt(j.soc_est,1)} %<br>Balance: <b style="color:${r.c}">${r.k}</b> <span style="color:var(--muted)">(${hint})</span></div>`;
+  return `<table class="cell-table"><thead><tr><th>#</th><th>Voltage</th></tr></thead><tbody>${rows}</tbody></table>${sum}`;
+}
+function render(j){
+  const shown=j.ok?j:lastOk;
+  if(j.ok){
+    setStatus(`<span class="okc">Connected</span> · last read ${new Date(j.t).toLocaleTimeString([],{hour12:false})}`);
+  }else{
+    const age=lastOk?` · showing data from ${Math.round((Date.now()-lastOk.t)/1000)}s ago`:'';
+    setStatus(`<span class="err">${j.error}</span>${age}`);
+  }
+  if(j.raw)document.getElementById('raw').textContent=Object.keys(CMD).map(k=>`${k.padEnd(7)} ${hex(j.raw[k])}`).join('\n');
+  if(!shown)return;
+  const r=rateDelta(shown.cell_delta);
+  document.getElementById('metrics').innerHTML=[
+    ['Pack','pack_v','V',1],['Σ cells','cell_sum','V',2],['Battery est.','soc_est','%',1],
+    ['Current','current_a','A',1],['SOC BMS','soc','%',0],['Δ cells','cell_delta','V',3],
+    ['Time left','time_remain','h',1],['Cycles','cycles','',0]
+  ].map(([l,k,u,d])=>`<div class="card"><div class="lbl">${l}</div><div class="val">${fmt(shown[k],d)}<span class="unit">${u&&shown[k]!=null?' '+u:''}</span></div></div>`).join('')
+  +(r?`<div class="card"><div class="lbl">Balance</div><div class="val" style="color:${r.c}">${r.k}</div></div>`:'')
+  +(shown.temps||[]).map((t,i)=>`<div class="card"><div class="lbl">T${i+1}</div><div class="val">${t}<span class="unit"> °C</span></div></div>`).join('');
+  document.getElementById('cells').innerHTML=renderCells(shown);
+  document.getElementById('identity').innerHTML=[
+    shown.serial_bms&&'BMS serial: <b>'+shown.serial_bms+'</b>',
+    (shown.sw||shown.hw)&&'Firmware '+(shown.sw||'?')+' · Hardware '+(shown.hw||'?')
+  ].filter(Boolean).join(' · ')||'—';
+}
+
+// ---------- History: per battery (BMS serial), stored in this browser ----------
+const HPRE='niuBmsHist:',HMAX=4000,GAP=300000;
+let curSn=null,viewSn=null,userPicked=false,hist=[];
+function loadHist(sn){try{return JSON.parse(localStorage.getItem(HPRE+sn)||'[]')}catch(e){return[]}}
+function saveHist(sn,arr){
+  for(let i=0;i<4;i++){
+    try{localStorage.setItem(HPRE+sn,JSON.stringify(arr));return}
+    catch(e){arr.splice(0,Math.ceil(arr.length/4))} // storage full: drop oldest quarter
+  }
+}
+function knownSns(){
+  const out=[];
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
+    if(k&&k.startsWith(HPRE))out.push(k.slice(HPRE.length))}}catch(e){}
+  return out.sort();
+}
+function fillBatSel(){
+  const sns=knownSns();
+  if(curSn&&!sns.includes(curSn))sns.push(curSn);
+  document.getElementById('bat').innerHTML=sns.length
+    ?sns.map(s=>`<option value="${s}"${s===viewSn?' selected':''}>${s}${s===curSn?' (connected)':''}</option>`).join('')
+    :'<option value="">no battery yet</option>';
+}
+function selectBattery(sn){viewSn=sn||null;hist=viewSn?loadHist(viewSn):[];fillBatSel();drawCharts()}
+function addHist(j){
+  if(!j.ok||!j.serial_bms)return;
+  if(j.serial_bms!==curSn){
+    curSn=j.serial_bms;
+    if(!userPicked)selectBattery(curSn);else fillBatSel();
+  }
+  const arr=curSn===viewSn?hist:loadHist(curSn);
+  arr.push({t:j.t,p:j.pack_v,s:+j.cell_sum.toFixed(3),d:+j.cell_delta.toFixed(3),c:j.cells.map(c=>c.v)});
+  if(arr.length>HMAX)arr.splice(0,arr.length-HMAX);
+  saveHist(curSn,arr);
+  if(curSn===viewSn)drawCharts();
+}
+function drawChart(cv,series,o){
+  const dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
+  if(!W)return;
+  cv.width=W*dpr;cv.height=H*dpr;
+  const g=cv.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,W,H);
+  g.font='11px system-ui,sans-serif';g.fillStyle='#8b9cb3';
+  let t0=Infinity,t1=-Infinity,v0=Infinity,v1=-Infinity;
+  for(const s of series)for(const [t,v] of s.pts){if(v==null)continue;
+    if(t<t0)t0=t;if(t>t1)t1=t;if(v<v0)v0=v;if(v>v1)v1=v;}
+  if(!isFinite(t0)){g.textAlign='center';g.fillText('Collecting data…',W/2,H/2);return}
+  for(const b of o.bands||[]){if(b.v>v0&&b.v<v1*1.5)v1=Math.max(v1,b.v)}
+  if(v1-v0<o.minSpan){const m=(v0+v1)/2;v0=m-o.minSpan/2;v1=m+o.minSpan/2}
+  const pad=(v1-v0)*.08;v0-=pad;v1+=pad;
+  if(o.floor!=null&&v0<o.floor)v0=o.floor;
+  if(t1===t0){t0-=30000;t1+=30000}
+  const L=46,R=10,T=8,B=20,pw=W-L-R,ph=H-T-B;
+  const X=t=>L+(t-t0)/(t1-t0)*pw,Y=v=>T+(v1-v)/(v1-v0)*ph;
+  g.lineWidth=1;g.strokeStyle='#2a3548';g.textAlign='right';g.textBaseline='middle';
+  for(let i=0;i<=4;i++){const v=v0+(v1-v0)*i/4,y=Y(v);
+    g.beginPath();g.moveTo(L,y);g.lineTo(W-R,y);g.stroke();g.fillText(v.toFixed(o.nd),L-5,y)}
+  for(const b of o.bands||[]){if(b.v<=v0||b.v>=v1)continue;const y=Y(b.v);
+    g.save();g.setLineDash([4,4]);g.strokeStyle=b.c;g.globalAlpha=.7;
+    g.beginPath();g.moveTo(L,y);g.lineTo(W-R,y);g.stroke();g.restore()}
+  const span=t1-t0,tf=span<3600000?{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}:{hour:'2-digit',minute:'2-digit',hour12:false};
+  const nt=Math.max(1,Math.min(3,Math.floor(pw/110)));
+  g.textBaseline='top';
+  for(let i=0;i<=nt;i++){const t=t0+span*i/nt;
+    g.textAlign=i===0?'left':i===nt?'right':'center';
+    g.fillText(new Date(t).toLocaleTimeString([],tf),X(t),H-B+5)}
+  g.lineJoin='round';g.lineCap='round';
+  for(const s of series){
+    g.strokeStyle=s.c;g.fillStyle=s.c;g.lineWidth=s.w||1.5;g.globalAlpha=s.a||1;
+    g.beginPath();let pen=false,pt=null;
+    for(const [t,v] of s.pts){
+      if(v==null){pen=false;continue}
+      if(pen&&pt!=null&&t-pt>GAP)pen=false;
+      if(pen)g.lineTo(X(t),Y(v));else g.moveTo(X(t),Y(v));
+      pen=true;pt=t;
+    }
+    g.stroke();
+    if(s.pts.length===1){g.beginPath();g.arc(X(s.pts[0][0]),Y(s.pts[0][1]),2.5,0,7);g.fill()}
+    g.globalAlpha=1;
+  }
+}
+function drawCharts(){
+  const rng=+document.getElementById('range').value,now=Date.now();
+  const h=rng?hist.filter(p=>now-p.t<=rng):hist;
+  document.getElementById('histInfo').textContent=viewSn
+    ?`${h.length} of ${hist.length} samples${viewSn!==curSn?' · stored history, not the connected battery':''}`
+    :'';
+  drawChart(document.getElementById('chPack'),[
+    {pts:h.map(p=>[p.t,p.p]),c:'#3b82f6',w:2},
+    {pts:h.map(p=>[p.t,p.s]),c:'#22c55e',w:1.5}
+  ],{nd:1,minSpan:1});
+  const last=h[h.length-1];
+  let lo=-1,hi=-1;
+  if(last){const c=last.c.map(v=>v==null?NaN:v);
+    lo=c.indexOf(Math.min(...c.filter(v=>!isNaN(v))));hi=c.indexOf(Math.max(...c.filter(v=>!isNaN(v))))}
+  const n=last?last.c.length:0,ser=[];
+  for(let i=0;i<n;i++){if(i===lo||i===hi)continue;
+    ser.push({pts:h.map(p=>[p.t,p.c[i]]),c:'#64748b',w:1,a:.55})}
+  if(hi>=0)ser.push({pts:h.map(p=>[p.t,p.c[hi]]),c:'#facc15',w:2});
+  if(lo>=0)ser.push({pts:h.map(p=>[p.t,p.c[lo]]),c:'#22d3ee',w:2});
+  drawChart(document.getElementById('chCells'),ser,{nd:3,minSpan:.05});
+  document.getElementById('cellKey').innerHTML=last
+    ?`<i class="key" style="background:#22d3ee"></i>#${lo+1} min · <i class="key" style="background:#facc15"></i>#${hi+1} max · <i class="key" style="background:#64748b"></i>others`:'';
+  const at=last?' <span style="color:var(--muted);font-weight:400">@ '+new Date(last.t).toLocaleTimeString([],{hour12:false})+'</span>':'';
+  document.getElementById('nowPack').innerHTML=last
+    ?`<span style="color:#3b82f6">${fmt(last.p,1)} V</span> · <span style="color:#22c55e">${fmt(last.s,2)} V</span>${at}`:'';
+  document.getElementById('nowCells').innerHTML=last
+    ?`<span style="color:#22d3ee">${fmt(last.c[lo],3)}</span> – <span style="color:#facc15">${fmt(last.c[hi],3)} V</span>${at}`:'';
+  const r=last?rateDelta(last.d):null;
+  document.getElementById('nowDelta').innerHTML=r
+    ?`${fmt(last.d*1000,0)} mV <span style="color:${r.c}">${r.k}</span>${at}`:'';
+  drawChart(document.getElementById('chDelta'),[
+    {pts:h.map(p=>[p.t,p.d==null?null:p.d*1000]),c:'#d8b4fe',w:2}
+  ],{nd:0,minSpan:20,floor:0,bands:[{v:DGOOD*1000,c:'#22c55e'},{v:DMED*1000,c:'#f59e0b'}]});
+}
+document.getElementById('range').onchange=drawCharts;
+document.getElementById('bat').onchange=e=>{userPicked=e.target.value!==curSn;selectBattery(e.target.value)};
+document.getElementById('clr').onclick=()=>{
+  if(!viewSn||!confirm(`Clear stored voltage history for battery ${viewSn}?`))return;
+  try{localStorage.removeItem(HPRE+viewSn)}catch(e){}
+  hist=[];fillBatSel();drawCharts();
+};
+window.addEventListener('resize',drawCharts);
+
+// ---------- start ----------
+{ // until the BMS answers, show the battery with the newest data
+  let best=null,bt=-1;
+  for(const sn of knownSns()){const a=loadHist(sn),t=a.length?a[a.length-1].t:0;if(t>bt){bt=t;best=sn}}
+  selectBattery(best);
+}
+if(!navigator.usb){
+  document.getElementById('unsupported').classList.remove('hidden');
+  document.getElementById('connect').disabled=true;
+}else{
+  document.getElementById('connect').onclick=async()=>{
+    try{connect(await navigator.usb.requestDevice({filters:CP210X_FILTERS}))}
+    catch(e){if(e.name!=='NotFoundError')setStatus(`<span class="err">${e.message}</span>`)}
+  };
+  document.getElementById('disconnect').onclick=()=>disconnect();
+  // Reconnect without a tap when a previously allowed dongle is plugged in
+  const isCp=d=>CP210X_FILTERS.some(f=>f.vendorId===d.vendorId&&f.productId===d.productId);
+  navigator.usb.addEventListener('connect',e=>{if(isCp(e.device))connect(e.device)});
+  navigator.usb.addEventListener('disconnect',e=>{if(port&&e.device===port.dev)disconnect('Dongle unplugged')});
+  navigator.usb.getDevices().then(ds=>{const d=ds.find(isCp);if(d)connect(d)});
+}
+</script>
+</body>
+</html>
