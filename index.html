@@ -646,7 +646,9 @@ function drawCharts(h){
   document.getElementById('nowPack').innerHTML=last
     ?`<span style="color:#3b82f6">${fmt(last.p,1)} V</span> · <span style="color:#22c55e">${fmt(last.s,2)} V</span>${at}`:'';
   document.getElementById('nowCells').innerHTML=last
-    ?`<span style="color:#22d3ee">${fmt(lc[lo],3)}</span> – <span style="color:#facc15">${fmt(lc[hi],3)} V</span>${at}`:'';
+    ?(()=>{const d=lc[hi]-lc[lo],rd=rateDelta(d);
+      return `<span style="color:#22d3ee">${fmt(lc[lo],3)}</span> – <span style="color:#facc15">${fmt(lc[hi],3)} V</span>`
+        +` · Δ <span style="color:${rd.c}">${fmt(d*1000,0)} mV</span>${at}`})():'';
   const r=last?rateDelta(last.d):null;
   document.getElementById('nowDelta').innerHTML=r
     ?`${fmt(last.d*1000,0)} mV <span style="color:${r.c}">${r.k}</span>${at}`:'';
