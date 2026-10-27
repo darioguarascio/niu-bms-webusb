@@ -12,23 +12,28 @@ body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--
 .wrap{max-width:960px;margin:0 auto;padding:1rem 1rem 2rem}
 h1{font-size:1.35rem;font-weight:600;margin:0 0 .25rem}
 .sub{color:var(--muted);font-size:.9rem;margin:0 0 1rem}
-.bar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.bar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:.75rem}
+.batbar{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.75rem;margin-bottom:1rem}
+.batbar select#bat{flex:1 1 14rem;min-width:0;font-size:1rem;padding:.5rem .6rem}
+.view{font-size:.85rem;color:var(--muted);margin:.25rem 0 0}
 .grid{display:grid;gap:.75rem;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:1rem}
 .card{background:var(--card);border-radius:10px;padding:.85rem 1rem;border:1px solid var(--line)}
 .card .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-.card .val{font-size:1.35rem;font-weight:600;margin-top:.2rem}
+.card .val{font-size:1.35rem;font-weight:600;margin-top:.2rem;font-variant-numeric:tabular-nums}
+.card .val.sm{font-size:1rem}
 .card .unit{font-size:.85rem;color:var(--muted);font-weight:400}
+.card .note{font-size:.78rem;color:var(--muted);margin-top:.15rem;font-variant-numeric:tabular-nums}
 h2{font-size:1rem;margin:1.25rem 0 .5rem;color:var(--muted);font-weight:600}
-.cell-table{width:100%;max-width:22rem;border-collapse:collapse;font-size:.92rem;background:var(--card);border-radius:10px;overflow:hidden;border:1px solid var(--line)}
-.cell-table th,.cell-table td{padding:.45rem .75rem;text-align:left;border-bottom:1px solid var(--line)}
+.cell-table{width:100%;max-width:32rem;border-collapse:collapse;font-size:.9rem;background:var(--card);border-radius:10px;overflow:hidden;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.cell-table th,.cell-table td{padding:.42rem .6rem;text-align:right;border-bottom:1px solid var(--line)}
+.cell-table th:first-child,.cell-table td:first-child{text-align:left;color:var(--muted);width:2.2rem}
 .cell-table th{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;background:#151c28}
 .cell-table tr:last-child td{border-bottom:0}
-.cell-table td:first-child{color:var(--muted);width:2.5rem}
-.cell-table td:last-child{font-weight:600;font-variant-numeric:tabular-nums}
-.cell-table tr.cell-min td{background:rgba(6,182,212,.12)}.cell-table tr.cell-min td:last-child{color:#22d3ee}
-.cell-table tr.cell-max td{background:rgba(234,179,8,.12)}.cell-table tr.cell-max td:last-child{color:#facc15}
-.cell-table .tag{font-size:.72rem;font-weight:600;margin-left:.35rem}
-.cell-summary{margin-top:.75rem;max-width:36rem;padding:.65rem .85rem;background:var(--card);border-radius:8px;border:1px solid var(--line);color:#d8b4fe;font-weight:500;font-size:.88rem;font-variant-numeric:tabular-nums}
+.cell-table td.now{font-weight:600}
+.cell-table td.dim{color:var(--muted)}
+.cell-table tr.cell-min td{background:rgba(6,182,212,.12)}.cell-table tr.cell-min td.now{color:#22d3ee}
+.cell-table tr.cell-max td{background:rgba(234,179,8,.12)}.cell-table tr.cell-max td.now{color:#facc15}
+.cell-summary{margin-top:.75rem;max-width:32rem;padding:.65rem .85rem;background:var(--card);border-radius:8px;border:1px solid var(--line);color:#d8b4fe;font-weight:500;font-size:.88rem;font-variant-numeric:tabular-nums}
 .chart{background:var(--card);border-radius:10px;border:1px solid var(--line);padding:.6rem .75rem .4rem;margin-bottom:.75rem}
 .chart .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);display:flex;gap:.75rem;flex-wrap:wrap}
 .chart .now{margin-left:auto;color:var(--text);font-weight:600;text-transform:none;letter-spacing:0;font-variant-numeric:tabular-nums}
@@ -37,7 +42,7 @@ h2{font-size:1rem;margin:1.25rem 0 .5rem;color:var(--muted);font-weight:600}
 .meta{font-size:.85rem;color:var(--muted)}.err{color:var(--bad)}.stale{color:var(--warn)}.okc{color:var(--ok)}
 button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:.5rem 1rem;font-size:.9rem;cursor:pointer}
 button:disabled{opacity:.5}
-select,button.sec{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem;font-size:.85rem}
+select,button.sec{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem;font-size:.85rem}
 details{margin-top:1rem}summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.6rem;font-size:.75rem;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
 .hidden{display:none}
@@ -55,24 +60,38 @@ pre{background:var(--card);border:1px solid var(--line);border-radius:8px;paddin
 </div>
 <p id="unsupported" class="err hidden">This browser has no WebUSB. Use Chrome on Android (with a USB OTG adapter) or desktop Chrome/Edge.</p>
 
+<div class="batbar">
+<div class="bar" style="margin:0">
+<select id="bat" title="Battery"></select>
+<button class="sec" id="rename" type="button">Rename</button>
+<select id="range" title="Time range for statistics and charts">
+<option value="900000">15 min</option><option value="3600000">1 h</option><option value="21600000">6 h</option>
+<option value="86400000">24 h</option><option value="604800000">7 days</option><option value="0" selected>All</option>
+</select>
+</div>
+<p class="view" id="view"></p>
+</div>
+
 <div class="grid" id="metrics"></div>
+
 <h2>Cell voltages</h2>
 <div id="cells"><p class="meta">Connect the dongle to the phone, then tap “Connect dongle”.</p></div>
 
+<h2>Statistics <span class="meta" id="statRange"></span></h2>
+<div class="grid" id="stats"><p class="meta">No readings stored for this battery yet.</p></div>
+
 <h2>Voltage over time</h2>
-<div class="bar">
-<select id="bat" title="Battery (BMS serial)"></select>
-<select id="range"><option value="900000">15 min</option><option value="3600000" selected>1 h</option><option value="21600000">6 h</option><option value="0">All</option></select>
-<button class="sec" id="clr" type="button">Clear history</button>
-<span class="meta" id="histInfo"></span>
-</div>
 <div class="chart"><div class="lbl"><span>Pack voltage (V)</span><span><i class="key" style="background:#3b82f6"></i>BMS</span><span><i class="key" style="background:#22c55e"></i>Σ cells</span><span class="now" id="nowPack"></span></div><canvas id="chPack"></canvas></div>
 <div class="chart"><div class="lbl"><span>Cell voltages (V)</span><span id="cellKey"></span><span class="now" id="nowCells"></span></div><canvas id="chCells"></canvas></div>
 <div class="chart"><div class="lbl"><span>Cell Δ (mV)</span><span><i class="key" style="background:var(--ok)"></i>&lt;50 good</span><span><i class="key" style="background:var(--warn)"></i>50–100 med</span><span><i class="key" style="background:var(--bad)"></i>&gt;100 bad</span><span class="now" id="nowDelta"></span></div><canvas id="chDelta"></canvas></div>
 
 <h2>Identity</h2>
 <p class="meta" id="identity">—</p>
-<details><summary>Raw payloads (hex)</summary><pre id="raw">—</pre></details>
+<div class="bar">
+<button class="sec" id="csv" type="button">Export CSV</button>
+<button class="sec" id="clr" type="button">Clear history</button>
+</div>
+<details><summary>Raw payloads (hex, last live read)</summary><pre id="raw">—</pre></details>
 </div>
 
 <script>
@@ -192,7 +211,7 @@ class Cp210x{
 const CP210X_FILTERS=[{vendorId:0x10c4,productId:0xea60},{vendorId:0x10c4,productId:0xea70},{vendorId:0x10c4,productId:0xea71}];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-let port=null,polling=false,lastOk=null,prevSerial=null,prevPollOk=false,wakeLock=null;
+let port=null,polling=false,live=null,prevSerial=null,prevPollOk=false,wakeLock=null;
 
 async function transact(cmd,timeoutMs=1200){
   port.buf.length=0;
@@ -217,7 +236,7 @@ async function readBms(){
   if(!j.ok){j.error=raw.pack?'cell read failed':'no reply from BMS (check A/B/GND on the battery plug)';return j}
   Object.assign(j,decodePack(raw.pack));
   const cv=decodeCells(raw.cells);
-  j.cells=cv.map((v,i)=>({n:i+1,v,valid:v!=null}));
+  j.cells=cv;
   const vals=cv.filter(v=>v!=null);
   j.cell_sum=vals.reduce((a,b)=>a+b,0);
   j.v_min=Math.min(...vals);j.v_max=Math.max(...vals);
@@ -239,8 +258,7 @@ async function pollLoop(){
     try{j=await readBms()}catch(e){j={ok:false,error:'USB error: '+e.message,t:Date.now()}}
     if(!polling)break;
     prevPollOk=j.ok;
-    if(j.ok){prevSerial=j.serial_bms;lastOk=j;addHist(j)}
-    render(j);
+    onReading(j);
     await sleep(Math.max(200,POLL_MS-(Date.now()-t0)));
   }
 }
@@ -250,7 +268,7 @@ async function connect(dev){
   setStatus('Opening dongle…');
   const p=new Cp210x(dev);
   try{await p.open()}catch(e){
-    setStatus(`<span class="err">Could not open dongle: ${e.message}</span>`);
+    setStatus(`<span class="err">Could not open dongle: ${esc(e.message)}</span>`);
     try{await dev.close()}catch(_){}
     return;
   }
@@ -264,12 +282,13 @@ async function connect(dev){
 }
 async function disconnect(msg){
   polling=false;
-  const p=port;port=null;prevPollOk=false;
+  const p=port;port=null;prevPollOk=false;live=null;curSn=null;
   if(p)await p.close();
   releaseAwake();
   document.getElementById('connect').classList.remove('hidden');
   document.getElementById('disconnect').classList.add('hidden');
   setStatus(msg||'Not connected');
+  fillBatSel();refresh();
 }
 async function keepAwake(){
   try{if('wakeLock' in navigator&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.onrelease=()=>{wakeLock=null}}}catch(e){}
@@ -277,93 +296,272 @@ async function keepAwake(){
 function releaseAwake(){try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&port)keepAwake()});
 
+// ---------- Storage: IndexedDB, per battery (BMS serial), kept until the user clears it ----------
+// readings: {sn, t, ...entry} indexed by [sn,t]; meta: {sn, alias, sw, hw, ok, fail, lastT}
+// Nothing is ever deleted automatically. If a write fails (storage full) the reading is
+// dropped and the user is told; old data is never trimmed to make room.
+const GAP=300000,CHART_PTS=1200;
+let db=null,metas={},storageErr=null;
+let curSn=null,viewSn=null,userPicked=false,hist=[];
+const idbReq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const idbTx=tx=>new Promise((res,rej)=>{tx.oncomplete=()=>res();tx.onerror=tx.onabort=()=>rej(tx.error||new Error('transaction aborted'))});
+function openDb(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('niu-bms',1);
+    r.onupgradeneeded=()=>{
+      const d=r.result;
+      d.createObjectStore('readings',{autoIncrement:true}).createIndex('sn_t',['sn','t']);
+      d.createObjectStore('meta',{keyPath:'sn'});
+    };
+    r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);
+  });
+}
+async function loadMetas(){
+  const all=await idbReq(db.transaction('meta').objectStore('meta').getAll());
+  metas={};for(const m of all)metas[m.sn]=m;
+}
+const loadMeta=sn=>metas[sn]||(metas[sn]={sn});
+function saveMeta(m){
+  metas[m.sn]=m;
+  const tx=db.transaction('meta','readwrite');tx.objectStore('meta').put(m);
+  return idbTx(tx).catch(e=>{storageErr=e.message});
+}
+async function loadHist(sn){
+  const idx=db.transaction('readings').objectStore('readings').index('sn_t');
+  return idbReq(idx.getAll(IDBKeyRange.bound([sn,-Infinity],[sn,Infinity])));
+}
+async function addReading(sn,e,m){
+  const tx=db.transaction(['readings','meta'],'readwrite');
+  tx.objectStore('readings').add(Object.assign({sn},e));
+  tx.objectStore('meta').put(m);
+  await idbTx(tx);
+}
+async function clearReadings(sn){
+  const tx=db.transaction('readings','readwrite');
+  const idx=tx.objectStore('readings').index('sn_t');
+  idx.openKeyCursor(IDBKeyRange.bound([sn,-Infinity],[sn,Infinity])).onsuccess=ev=>{
+    const c=ev.target.result;if(c){tx.objectStore('readings').delete(c.primaryKey);c.continue()}
+  };
+  await idbTx(tx);
+}
+// One-time move of the earlier localStorage format; old keys are removed only after the copy commits
+async function migrateLocalStorage(){
+  let keys=[];
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i)||'';if(k.startsWith('niuBms'))keys.push(k)}}catch(e){return}
+  for(const k of keys){
+    try{
+      const v=JSON.parse(localStorage.getItem(k));
+      if(k.startsWith('niuBmsHist:')&&Array.isArray(v)&&v.length){
+        const sn=k.slice(11),m=Object.assign(loadMeta(sn),{});
+        m.lastT=Math.max(m.lastT||0,v[v.length-1].t);
+        const tx=db.transaction(['readings','meta'],'readwrite');
+        for(const e of v)tx.objectStore('readings').add(Object.assign({sn},e));
+        tx.objectStore('meta').put(m);
+        await idbTx(tx);metas[sn]=m;
+      }else if(k.startsWith('niuBmsMeta:')&&v){
+        const sn=k.slice(11);await saveMeta(Object.assign(loadMeta(sn),v,{sn}));
+      }
+      localStorage.removeItem(k);
+    }catch(e){/* keep the key, retry on next load */}
+  }
+}
+async function storageInfo(){
+  let persisted=null,used=null,quota=null;
+  try{persisted=await navigator.storage.persisted()}catch(e){}
+  try{const est=await navigator.storage.estimate();used=est.usage;quota=est.quota}catch(e){}
+  return{persisted,used,quota};
+}
+async function askPersist(){
+  try{if(navigator.storage&&!(await navigator.storage.persisted()))await navigator.storage.persist()}catch(e){}
+}
+const knownSns=()=>Object.keys(metas);
+const nameOf=sn=>(metas[sn]&&metas[sn].alias)||sn;
+// Readings store cells as mV integers (field m); early entries used volts (field c)
+const cellsOf=e=>e.m?e.m.map(x=>x==null?null:x/1000):(e.c||[]);
+function toEntry(j){
+  const r3=v=>v==null?null:Math.round(v*1000)/1000;
+  return{t:j.t,p:j.pack_v,s:r3(j.cell_sum),d:r3(j.cell_delta),m:j.cells.map(v=>v==null?null:Math.round(v*1000)),
+    i:j.current_a,soc:j.soc,se:j.soc_est==null?null:Math.round(j.soc_est*10)/10,tr:j.time_remain,tp:j.temps,cy:j.cycles};
+}
+function fromEntry(e){
+  const cells=cellsOf(e),vals=cells.filter(v=>v!=null);
+  return{ok:true,t:e.t,pack_v:e.p,cell_sum:e.s,cell_delta:e.d,cells,
+    v_min:vals.length?Math.min(...vals):null,v_max:vals.length?Math.max(...vals):null,
+    current_a:e.i,soc:e.soc,soc_est:e.se,time_remain:e.tr,temps:e.tp||[],cycles:e.cy};
+}
+
+async function onReading(j){
+  if(j.ok&&j.serial_bms){
+    const isNew=j.serial_bms!==curSn;
+    curSn=j.serial_bms;live=j;
+    if(isNew&&!userPicked){viewSn=curSn;hist=await loadHist(curSn)}
+    const e=toEntry(j);
+    const m=Object.assign({},loadMeta(curSn));
+    m.ok=(m.ok||0)+1;m.lastT=j.t;if(j.sw)m.sw=j.sw;if(j.hw)m.hw=j.hw;
+    try{await addReading(curSn,e,m);metas[curSn]=m;storageErr=null;if(curSn===viewSn)hist.push(e)}
+    catch(err){storageErr=err.message||String(err)}
+    if(isNew)fillBatSel();
+    setStatus(`<span class="okc">Connected</span> · ${esc(nameOf(curSn))} · last read ${fmtTime(j.t)}`
+      +(storageErr?` · <span class="err">NOT SAVED: ${esc(storageErr)} — export CSV and free space</span>`:''));
+  }else{
+    if(curSn){const m=Object.assign({},loadMeta(curSn));m.fail=(m.fail||0)+1;saveMeta(m)}
+    const err=j.ok?'no battery serial in reply, reading not stored':j.error;
+    const age=live?` · last good read ${Math.round((Date.now()-live.t)/1000)}s ago`:'';
+    setStatus(`<span class="err">${esc(err)}</span>${age}`);
+  }
+  if(j.raw)document.getElementById('raw').textContent=Object.keys(CMD).map(k=>`${k.padEnd(7)} ${hex(j.raw[k])}`).join('\n');
+  refresh();
+}
+
 // ---------- UI ----------
-const fmt=(v,d)=>v==null||Number.isNaN(v)?'—':Number(v).toFixed(d);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(v,d)=>v==null||Number.isNaN(v)||!isFinite(v)?'—':Number(v).toFixed(d);
 const setStatus=h=>{document.getElementById('status').innerHTML=h};
+const fmtTime=t=>new Date(t).toLocaleTimeString([],{hour12:false});
+const fmtDT=t=>new Date(t).toLocaleString([],{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+function fmtDur(ms){
+  if(ms==null||ms<0)return'—';
+  let s=Math.round(ms/1000);const d=Math.floor(s/86400);s%=86400;const h=Math.floor(s/3600);s%=3600;const m=Math.floor(s/60);s%=60;
+  return d?`${d}d ${h}h ${m}m`:h?`${h}h ${m}m`:m?`${m}m ${s}s`:`${s}s`;
+}
 function rateDelta(d){
   if(d==null)return null;
   if(d<DGOOD)return{k:'GOOD',c:'var(--ok)',h:'cells well balanced'};
   if(d<=DMED)return{k:'MED',c:'var(--warn)',h:'slight imbalance, let the BMS balance at full charge'};
   return{k:'BAD',c:'var(--bad)',h:'imbalance, check the weakest cell'};
 }
-function renderCells(j){
-  const cells=(j.cells||[]).filter(c=>c.valid);
-  if(!cells.length)return'<p class="meta">No cell data</p>';
-  const lo=j.v_min,hi=j.v_max,eps=0.0006;
-  const rows=(j.cells||[]).map(c=>{
-    if(!c.valid)return `<tr><td>${c.n}</td><td>—</td></tr>`;
-    let cls='',tag='';
-    if(Math.abs(c.v-lo)<eps){cls='cell-min';tag='<span class="tag">min</span>'}
-    else if(Math.abs(c.v-hi)<eps){cls='cell-max';tag='<span class="tag">max</span>'}
-    return `<tr class="${cls}"><td>${c.n}</td><td>${fmt(c.v,3)} V ${tag}</td></tr>`;
-  }).join('');
-  const r=rateDelta(j.cell_delta);
-  const weak=cells.find(c=>Math.abs(c.v-lo)<eps);
-  const hint=r.k==='BAD'&&weak?`imbalance, check weakest cell #${weak.n}`:r.h;
-  const sum=`<div class="cell-summary">Δ ${fmt(j.cell_delta,3)} V (min ${fmt(lo,3)} V → max ${fmt(hi,3)} V) · Sum ${fmt(j.cell_sum,2)} V · Battery ${fmt(j.soc_est,1)} %<br>Balance: <b style="color:${r.c}">${r.k}</b> <span style="color:var(--muted)">(${hint})</span></div>`;
-  return `<table class="cell-table"><thead><tr><th>#</th><th>Voltage</th></tr></thead><tbody>${rows}</tbody></table>${sum}`;
-}
-function render(j){
-  const shown=j.ok?j:lastOk;
-  if(j.ok){
-    setStatus(`<span class="okc">Connected</span> · last read ${new Date(j.t).toLocaleTimeString([],{hour12:false})}`);
-  }else{
-    const age=lastOk?` · showing data from ${Math.round((Date.now()-lastOk.t)/1000)}s ago`:'';
-    setStatus(`<span class="err">${j.error}</span>${age}`);
-  }
-  if(j.raw)document.getElementById('raw').textContent=Object.keys(CMD).map(k=>`${k.padEnd(7)} ${hex(j.raw[k])}`).join('\n');
-  if(!shown)return;
-  const r=rateDelta(shown.cell_delta);
-  document.getElementById('metrics').innerHTML=[
-    ['Pack','pack_v','V',1],['Σ cells','cell_sum','V',2],['Battery est.','soc_est','%',1],
-    ['Current','current_a','A',1],['SOC BMS','soc','%',0],['Δ cells','cell_delta','V',3],
-    ['Time left','time_remain','h',1],['Cycles','cycles','',0]
-  ].map(([l,k,u,d])=>`<div class="card"><div class="lbl">${l}</div><div class="val">${fmt(shown[k],d)}<span class="unit">${u&&shown[k]!=null?' '+u:''}</span></div></div>`).join('')
-  +(r?`<div class="card"><div class="lbl">Balance</div><div class="val" style="color:${r.c}">${r.k}</div></div>`:'')
-  +(shown.temps||[]).map((t,i)=>`<div class="card"><div class="lbl">T${i+1}</div><div class="val">${t}<span class="unit"> °C</span></div></div>`).join('');
-  document.getElementById('cells').innerHTML=renderCells(shown);
-  document.getElementById('identity').innerHTML=[
-    shown.serial_bms&&'BMS serial: <b>'+shown.serial_bms+'</b>',
-    (shown.sw||shown.hw)&&'Firmware '+(shown.sw||'?')+' · Hardware '+(shown.hw||'?')
-  ].filter(Boolean).join(' · ')||'—';
-}
+const card=(lbl,val,unit,note,style)=>`<div class="card"><div class="lbl">${lbl}</div><div class="val${style&&style.sm?' sm':''}"${style&&style.c?` style="color:${style.c}"`:''}>${val}${unit?`<span class="unit"> ${unit}</span>`:''}</div>${note?`<div class="note">${note}</div>`:''}</div>`;
 
-// ---------- History: per battery (BMS serial), stored in this browser ----------
-const HPRE='niuBmsHist:',HMAX=4000,GAP=300000;
-let curSn=null,viewSn=null,userPicked=false,hist=[];
-function loadHist(sn){try{return JSON.parse(localStorage.getItem(HPRE+sn)||'[]')}catch(e){return[]}}
-function saveHist(sn,arr){
-  for(let i=0;i<4;i++){
-    try{localStorage.setItem(HPRE+sn,JSON.stringify(arr));return}
-    catch(e){arr.splice(0,Math.ceil(arr.length/4))} // storage full: drop oldest quarter
-  }
-}
-function knownSns(){
-  const out=[];
-  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
-    if(k&&k.startsWith(HPRE))out.push(k.slice(HPRE.length))}}catch(e){}
-  return out.sort();
-}
 function fillBatSel(){
   const sns=knownSns();
   if(curSn&&!sns.includes(curSn))sns.push(curSn);
-  document.getElementById('bat').innerHTML=sns.length
-    ?sns.map(s=>`<option value="${s}"${s===viewSn?' selected':''}>${s}${s===curSn?' (connected)':''}</option>`).join('')
-    :'<option value="">no battery yet</option>';
+  sns.sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));
+  const sel=document.getElementById('bat');
+  sel.innerHTML=sns.length
+    ?sns.map(s=>{const a=metas[s]&&metas[s].alias;
+      return `<option value="${esc(s)}"${s===viewSn?' selected':''}>${esc(a?`${a} · ${s}`:s)}${s===curSn?' ● connected':''}</option>`}).join('')
+    :'<option value="">No battery yet</option>';
+  document.getElementById('rename').disabled=!viewSn;
 }
-function selectBattery(sn){viewSn=sn||null;hist=viewSn?loadHist(viewSn):[];fillBatSel();drawCharts()}
-function addHist(j){
-  if(!j.ok||!j.serial_bms)return;
-  if(j.serial_bms!==curSn){
-    curSn=j.serial_bms;
-    if(!userPicked)selectBattery(curSn);else fillBatSel();
+async function selectBattery(sn){
+  viewSn=sn||null;fillBatSel();
+  const h=viewSn?await loadHist(viewSn):[];
+  if(viewSn===(sn||null))hist=h; // ignore a slow load if the user switched again
+  refresh();
+}
+
+function rangeHist(){
+  const rng=+document.getElementById('range').value,now=Date.now();
+  return rng?hist.filter(p=>now-p.t<=rng):hist;
+}
+
+function refresh(){
+  const h=rangeHist();
+  const isLive=!!(viewSn&&viewSn===curSn&&live);
+  const j=isLive?live:(hist.length?fromEntry(hist[hist.length-1]):null);
+  const view=document.getElementById('view');
+  if(!viewSn)view.textContent='No battery selected yet. Connect the dongle to a battery.';
+  else if(isLive)view.innerHTML=`<span class="okc">● Live</span> · ${esc(viewSn)}`;
+  else view.innerHTML=j?`<span class="stale">Not connected</span> · showing last stored reading from ${fmtDT(j.t)} · ${esc(viewSn)}`
+    :`<span class="stale">Not connected</span> · no stored readings · ${esc(viewSn)}`;
+  renderMetrics(j);
+  renderCells(j,h);
+  renderStats(h);
+  renderIdentity(j);
+  drawCharts(h);
+}
+
+function renderMetrics(j){
+  const el=document.getElementById('metrics');
+  if(!j){el.innerHTML='';return}
+  const r=rateDelta(j.cell_delta);
+  el.innerHTML=[
+    card('Pack',fmt(j.pack_v,1),'V'),card('Σ cells',fmt(j.cell_sum,2),'V'),card('Battery est.',fmt(j.soc_est,1),'%'),
+    card('Current',fmt(j.current_a,1),'A'),card('SOC BMS',fmt(j.soc,0),'%'),card('Δ cells',fmt(j.cell_delta*1000,0),'mV'),
+    card('Time left',fmt(j.time_remain,1),'h'),card('Cycles',fmt(j.cycles,0)),
+    r?card('Balance',r.k,'','',{c:r.c}):''
+  ].join('')+(j.temps||[]).map((t,i)=>card(`T${i+1}`,t,'°C')).join('');
+}
+
+function cellStats(h){
+  const n=Math.max(0,...h.map(e=>cellsOf(e).length));
+  const out=[];
+  for(let i=0;i<n;i++){
+    let sum=0,c=0,mn=Infinity,mx=-Infinity;
+    for(const e of h){const v=cellsOf(e)[i];if(v==null)continue;sum+=v;c++;if(v<mn)mn=v;if(v>mx)mx=v}
+    out.push(c?{avg:sum/c,min:mn,max:mx}:null);
   }
-  const arr=curSn===viewSn?hist:loadHist(curSn);
-  arr.push({t:j.t,p:j.pack_v,s:+j.cell_sum.toFixed(3),d:+j.cell_delta.toFixed(3),c:j.cells.map(c=>c.v)});
-  if(arr.length>HMAX)arr.splice(0,arr.length-HMAX);
-  saveHist(curSn,arr);
-  if(curSn===viewSn)drawCharts();
+  return out;
 }
+
+function renderCells(j,h){
+  const el=document.getElementById('cells');
+  if(!j||!j.cells||!j.cells.some(v=>v!=null)){el.innerHTML=viewSn?'<p class="meta">No cell data</p>':el.innerHTML;return}
+  const lo=j.v_min,hi=j.v_max,eps=0.0006,cs=cellStats(h);
+  const rows=j.cells.map((v,i)=>{
+    const s=cs[i];
+    const st=s?`<td class="dim">${fmt(s.avg,3)}</td><td class="dim">${fmt(s.min,3)}</td><td class="dim">${fmt(s.max,3)}</td>`:'<td></td><td></td><td></td>';
+    if(v==null)return `<tr><td>${i+1}</td><td class="now">—</td>${st}</tr>`;
+    const cls=Math.abs(v-lo)<eps?'cell-min':Math.abs(v-hi)<eps?'cell-max':'';
+    return `<tr class="${cls}"><td>${i+1}</td><td class="now">${fmt(v,3)}</td>${st}</tr>`;
+  }).join('');
+  const r=rateDelta(j.cell_delta);
+  const weak=j.cells.findIndex(v=>v!=null&&Math.abs(v-lo)<eps);
+  const hint=r.k==='BAD'&&weak>=0?`imbalance, check weakest cell #${weak+1}`:r.h;
+  el.innerHTML=`<table class="cell-table"><thead><tr><th>#</th><th>Now (V)</th><th>Avg</th><th>Min</th><th>Max</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="cell-summary">Δ ${fmt(j.cell_delta*1000,0)} mV (min ${fmt(lo,3)} V → max ${fmt(hi,3)} V) · Sum ${fmt(j.cell_sum,2)} V · Battery ${fmt(j.soc_est,1)} %<br>Balance: <b style="color:${r.c}">${r.k}</b> <span style="color:var(--muted)">(${hint})</span>
+<br><span style="color:var(--muted);font-weight:400">Avg / min / max over ${h.length} stored reading${h.length===1?'':'s'} in the selected range</span></div>`;
+}
+
+function renderStats(h){
+  const el=document.getElementById('stats');
+  const rngSel=document.getElementById('range');
+  document.getElementById('statRange').textContent=`· ${rngSel.options[rngSel.selectedIndex].text}`;
+  if(!viewSn||!h.length){el.innerHTML=`<p class="meta">${viewSn?'No readings in this range.':'No readings stored yet.'}</p>`;return}
+  const n=h.length,first=h[0],last=h[n-1],span=last.t-first.t;
+  const col=f=>h.map(f).filter(v=>v!=null&&isFinite(v));
+  const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  const P=col(e=>e.p),D=col(e=>e.d),I=col(e=>e.i),T=h.flatMap(e=>e.tp||[]).filter(v=>v!=null),C=col(e=>e.cy);
+  // Weakest cell: the one that is the lowest most often
+  const lowCount={};
+  for(const e of h){const c=cellsOf(e);let mi=-1,mv=Infinity;c.forEach((v,i)=>{if(v!=null&&v<mv){mv=v;mi=i}});if(mi>=0)lowCount[mi]=(lowCount[mi]||0)+1}
+  const weak=Object.entries(lowCount).sort((a,b)=>b[1]-a[1])[0];
+  const m=loadMeta(viewSn),ok=m.ok||0,fail=m.fail||0;
+  const ad=avg(D),r=rateDelta(ad);
+  const sign=v=>v>0?'+':'';
+  el.innerHTML=[
+    card('First reading',fmtDT(first.t),'','',{sm:1}),
+    card('Last reading',fmtDT(last.t),'',`${fmtDur(Date.now()-last.t)} ago`,{sm:1}),
+    card('Time span',fmtDur(span)),
+    card('Readings',n,'',`of ${hist.length} stored${n>1?` · every ${fmtDur(span/(n-1))}`:''}`),
+    card('Read success',ok+fail?fmt(ok/(ok+fail)*100,1):'—',ok+fail?'%':'',`${ok} ok · ${fail} failed (all time)`),
+    card('Pack avg',fmt(avg(P),2),'V',P.length?`${fmt(Math.min(...P),1)}–${fmt(Math.max(...P),1)} V · ${sign(last.p-first.p)}${fmt(last.p-first.p,1)} V`:''),
+    card('Cell Δ avg',fmt(ad*1000,0),'mV',D.length?`max ${fmt(Math.max(...D)*1000,0)} mV · ${r.k}`:''),
+    card('Current avg',fmt(avg(I),1),I.length?'A':'',I.length?`${fmt(Math.min(...I),1)} to ${fmt(Math.max(...I),1)} A`:'not stored'),
+    card('Temperature',T.length?`${Math.min(...T)}–${Math.max(...T)}`:'—',T.length?'°C':'',T.length?`avg ${fmt(avg(T),1)} °C`:''),
+    card('Weakest cell',weak?`#${+weak[0]+1}`:'—','',weak?`lowest in ${fmt(weak[1]/n*100,0)} % of readings`:''),
+    card('Cycles',C.length?C[C.length-1]:'—','',C.length>1&&C[C.length-1]!==C[0]?`+${C[C.length-1]-C[0]} in range`:'')
+  ].join('');
+}
+
+function renderIdentity(j){
+  if(!viewSn){document.getElementById('identity').textContent='—';return}
+  const m=loadMeta(viewSn);
+  document.getElementById('identity').innerHTML=[
+    m.alias&&'Name: <b>'+esc(m.alias)+'</b>',
+    'BMS serial: <b>'+esc(viewSn)+'</b>',
+    (m.sw||m.hw)&&'Firmware '+esc(m.sw||'?')+' · Hardware '+esc(m.hw||'?'),
+    hist.length&&`${hist.length} readings stored since ${fmtDT(hist[0].t)}`
+  ].filter(Boolean).join(' · ')+'<br><span id="storage"></span>';
+  storageInfo().then(s=>{
+    const el=document.getElementById('storage');if(!el)return;
+    const mb=b=>b==null?'?':(b/1048576).toFixed(1)+' MB';
+    el.innerHTML=`Storage on this device: ${mb(s.used)} used of ${mb(s.quota)} · `
+      +(s.persisted?'<span class="okc">persistent</span> (browser will not clear it)'
+        :'<span class="stale">not marked persistent</span> (Chrome may clear it if the phone runs out of space)');
+  });
+}
+
 function drawChart(cv,series,o){
   const dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
   if(!W)return;
@@ -373,7 +571,7 @@ function drawChart(cv,series,o){
   let t0=Infinity,t1=-Infinity,v0=Infinity,v1=-Infinity;
   for(const s of series)for(const [t,v] of s.pts){if(v==null)continue;
     if(t<t0)t0=t;if(t>t1)t1=t;if(v<v0)v0=v;if(v>v1)v1=v;}
-  if(!isFinite(t0)){g.textAlign='center';g.fillText('Collecting data…',W/2,H/2);return}
+  if(!isFinite(t0)){g.textAlign='center';g.fillText(viewSn?'No readings in this range':'Collecting data…',W/2,H/2);return}
   for(const b of o.bands||[]){if(b.v>v0&&b.v<v1*1.5)v1=Math.max(v1,b.v)}
   if(v1-v0<o.minSpan){const m=(v0+v1)/2;v0=m-o.minSpan/2;v1=m+o.minSpan/2}
   const pad=(v1-v0)*.08;v0-=pad;v1+=pad;
@@ -387,12 +585,14 @@ function drawChart(cv,series,o){
   for(const b of o.bands||[]){if(b.v<=v0||b.v>=v1)continue;const y=Y(b.v);
     g.save();g.setLineDash([4,4]);g.strokeStyle=b.c;g.globalAlpha=.7;
     g.beginPath();g.moveTo(L,y);g.lineTo(W-R,y);g.stroke();g.restore()}
-  const span=t1-t0,tf=span<3600000?{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}:{hour:'2-digit',minute:'2-digit',hour12:false};
+  const span=t1-t0;
+  const tf=span>172800000?{day:'2-digit',month:'short',hour12:false}
+    :span<3600000?{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}:{hour:'2-digit',minute:'2-digit',hour12:false};
   const nt=Math.max(1,Math.min(3,Math.floor(pw/110)));
   g.textBaseline='top';
   for(let i=0;i<=nt;i++){const t=t0+span*i/nt;
     g.textAlign=i===0?'left':i===nt?'right':'center';
-    g.fillText(new Date(t).toLocaleTimeString([],tf),X(t),H-B+5)}
+    g.fillText(span>172800000?new Date(t).toLocaleDateString([],tf):new Date(t).toLocaleTimeString([],tf),X(t),H-B+5)}
   g.lineJoin='round';g.lineCap='round';
   for(const s of series){
     g.strokeStyle=s.c;g.fillStyle=s.c;g.lineWidth=s.w||1.5;g.globalAlpha=s.a||1;
@@ -408,33 +608,45 @@ function drawChart(cv,series,o){
     g.globalAlpha=1;
   }
 }
-function drawCharts(){
-  const rng=+document.getElementById('range').value,now=Date.now();
-  const h=rng?hist.filter(p=>now-p.t<=rng):hist;
-  document.getElementById('histInfo').textContent=viewSn
-    ?`${h.length} of ${hist.length} samples${viewSn!==curSn?' · stored history, not the connected battery':''}`
-    :'';
+// Long histories are averaged into at most CHART_PTS buckets for drawing (Δ keeps the bucket max).
+// Statistics always use every stored reading.
+function thin(h,max){
+  if(h.length<=max)return h;
+  const k=Math.ceil(h.length/max),out=[];
+  const avg=a=>{const v=a.filter(x=>x!=null);return v.length?v.reduce((x,y)=>x+y,0)/v.length:null};
+  for(let i=0;i<h.length;i+=k){
+    const b=h.slice(i,i+k);
+    if(b[b.length-1].t-b[0].t>GAP){out.push(...b);continue} // keep gaps visible
+    const cs=b.map(cellsOf),n=Math.max(...cs.map(c=>c.length));
+    const ds=b.map(e=>e.d).filter(x=>x!=null);
+    out.push({t:b[b.length>>1].t,p:avg(b.map(e=>e.p)),s:avg(b.map(e=>e.s)),d:ds.length?Math.max(...ds):null,
+      c:[...Array(n)].map((_,j)=>avg(cs.map(c=>c[j])))});
+  }
+  return out;
+}
+function drawCharts(h){
+  if(!h)h=rangeHist();
+  const last=h[h.length-1],lc=last?cellsOf(last):[];
+  h=thin(h,CHART_PTS);
   drawChart(document.getElementById('chPack'),[
     {pts:h.map(p=>[p.t,p.p]),c:'#3b82f6',w:2},
     {pts:h.map(p=>[p.t,p.s]),c:'#22c55e',w:1.5}
   ],{nd:1,minSpan:1});
-  const last=h[h.length-1];
   let lo=-1,hi=-1;
-  if(last){const c=last.c.map(v=>v==null?NaN:v);
-    lo=c.indexOf(Math.min(...c.filter(v=>!isNaN(v))));hi=c.indexOf(Math.max(...c.filter(v=>!isNaN(v))))}
-  const n=last?last.c.length:0,ser=[];
-  for(let i=0;i<n;i++){if(i===lo||i===hi)continue;
-    ser.push({pts:h.map(p=>[p.t,p.c[i]]),c:'#64748b',w:1,a:.55})}
-  if(hi>=0)ser.push({pts:h.map(p=>[p.t,p.c[hi]]),c:'#facc15',w:2});
-  if(lo>=0)ser.push({pts:h.map(p=>[p.t,p.c[lo]]),c:'#22d3ee',w:2});
+  lc.forEach((v,i)=>{if(v==null)return;if(lo<0||v<lc[lo])lo=i;if(hi<0||v>lc[hi])hi=i});
+  const ser=[];
+  for(let i=0;i<lc.length;i++){if(i===lo||i===hi)continue;
+    ser.push({pts:h.map(p=>[p.t,cellsOf(p)[i]]),c:'#64748b',w:1,a:.55})}
+  if(hi>=0)ser.push({pts:h.map(p=>[p.t,cellsOf(p)[hi]]),c:'#facc15',w:2});
+  if(lo>=0)ser.push({pts:h.map(p=>[p.t,cellsOf(p)[lo]]),c:'#22d3ee',w:2});
   drawChart(document.getElementById('chCells'),ser,{nd:3,minSpan:.05});
   document.getElementById('cellKey').innerHTML=last
     ?`<i class="key" style="background:#22d3ee"></i>#${lo+1} min · <i class="key" style="background:#facc15"></i>#${hi+1} max · <i class="key" style="background:#64748b"></i>others`:'';
-  const at=last?' <span style="color:var(--muted);font-weight:400">@ '+new Date(last.t).toLocaleTimeString([],{hour12:false})+'</span>':'';
+  const at=last?' <span style="color:var(--muted);font-weight:400">@ '+fmtTime(last.t)+'</span>':'';
   document.getElementById('nowPack').innerHTML=last
     ?`<span style="color:#3b82f6">${fmt(last.p,1)} V</span> · <span style="color:#22c55e">${fmt(last.s,2)} V</span>${at}`:'';
   document.getElementById('nowCells').innerHTML=last
-    ?`<span style="color:#22d3ee">${fmt(last.c[lo],3)}</span> – <span style="color:#facc15">${fmt(last.c[hi],3)} V</span>${at}`:'';
+    ?`<span style="color:#22d3ee">${fmt(lc[lo],3)}</span> – <span style="color:#facc15">${fmt(lc[hi],3)} V</span>${at}`:'';
   const r=last?rateDelta(last.d):null;
   document.getElementById('nowDelta').innerHTML=r
     ?`${fmt(last.d*1000,0)} mV <span style="color:${r.c}">${r.k}</span>${at}`:'';
@@ -442,28 +654,67 @@ function drawCharts(){
     {pts:h.map(p=>[p.t,p.d==null?null:p.d*1000]),c:'#d8b4fe',w:2}
   ],{nd:0,minSpan:20,floor:0,bands:[{v:DGOOD*1000,c:'#22c55e'},{v:DMED*1000,c:'#f59e0b'}]});
 }
-document.getElementById('range').onchange=drawCharts;
+
+function exportCsv(){
+  if(!viewSn||!hist.length)return;
+  const n=Math.max(...hist.map(e=>cellsOf(e).length));
+  const head=['time','pack_v','cell_sum_v','cell_delta_v','current_a','soc_bms','soc_est','time_left_h','cycles','temps_c']
+    .concat([...Array(n)].map((_,i)=>`cell${i+1}_v`));
+  const q=v=>v==null?'':v;
+  const lines=hist.map(e=>[new Date(e.t).toISOString(),q(e.p),q(e.s),q(e.d),q(e.i),q(e.soc),q(e.se),q(e.tr),q(e.cy),(e.tp||[]).join(' ')]
+    .concat(cellsOf(e).map(v=>v==null?'':v.toFixed(3))).join(','));
+  const name=(loadMeta(viewSn).alias||viewSn).replace(/[^A-Za-z0-9_-]+/g,'_');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([head.join(',')+'\n'+lines.join('\n')+'\n'],{type:'text/csv'}));
+  a.download=`niu-bms-${name}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+document.getElementById('range').onchange=refresh;
 document.getElementById('bat').onchange=e=>{userPicked=e.target.value!==curSn;selectBattery(e.target.value)};
-document.getElementById('clr').onclick=()=>{
-  if(!viewSn||!confirm(`Clear stored voltage history for battery ${viewSn}?`))return;
-  try{localStorage.removeItem(HPRE+viewSn)}catch(e){}
-  hist=[];fillBatSel();drawCharts();
+document.getElementById('rename').onclick=()=>{
+  if(!viewSn)return;
+  const m=Object.assign({},loadMeta(viewSn));
+  const a=prompt(`Name for battery ${viewSn} (empty to remove):`,m.alias||'');
+  if(a===null)return;
+  const v=a.trim().slice(0,40);
+  if(v)m.alias=v;else delete m.alias;
+  saveMeta(m);fillBatSel();refresh();
+  if(curSn===viewSn&&live)setStatus(`<span class="okc">Connected</span> · ${esc(nameOf(curSn))} · last read ${fmtTime(live.t)}`);
 };
-window.addEventListener('resize',drawCharts);
+document.getElementById('csv').onclick=exportCsv;
+document.getElementById('clr').onclick=async()=>{
+  if(!viewSn||!confirm(`Delete all ${hist.length} stored readings for ${nameOf(viewSn)}? This cannot be undone. The name is kept.`))return;
+  const sn=viewSn;
+  try{await clearReadings(sn)}catch(e){alert('Could not clear: '+e.message);return}
+  const m=Object.assign({},loadMeta(sn));delete m.ok;delete m.fail;delete m.lastT;await saveMeta(m);
+  if(viewSn===sn)hist=[];
+  fillBatSel();refresh();
+};
+window.addEventListener('resize',()=>drawCharts());
 
 // ---------- start ----------
-{ // until the BMS answers, show the battery with the newest data
+async function start(){
+  try{db=await openDb()}catch(e){setStatus(`<span class="err">Storage unavailable: ${esc(e.message)}</span>`);return}
+  await loadMetas();
+  await migrateLocalStorage();
+  askPersist();
+  // until the BMS answers, show the battery with the newest data
   let best=null,bt=-1;
-  for(const sn of knownSns()){const a=loadHist(sn),t=a.length?a[a.length-1].t:0;if(t>bt){bt=t;best=sn}}
-  selectBattery(best);
+  for(const sn of knownSns()){const t=metas[sn].lastT||0;if(t>bt){bt=t;best=sn}}
+  await selectBattery(best);
+  initUsb();
 }
+function initUsb(){
 if(!navigator.usb){
   document.getElementById('unsupported').classList.remove('hidden');
   document.getElementById('connect').disabled=true;
 }else{
   document.getElementById('connect').onclick=async()=>{
+    askPersist();
     try{connect(await navigator.usb.requestDevice({filters:CP210X_FILTERS}))}
-    catch(e){if(e.name!=='NotFoundError')setStatus(`<span class="err">${e.message}</span>`)}
+    catch(e){if(e.name!=='NotFoundError')setStatus(`<span class="err">${esc(e.message)}</span>`)}
   };
   document.getElementById('disconnect').onclick=()=>disconnect();
   // Reconnect without a tap when a previously allowed dongle is plugged in
@@ -472,6 +723,8 @@ if(!navigator.usb){
   navigator.usb.addEventListener('disconnect',e=>{if(port&&e.device===port.dev)disconnect('Dongle unplugged')});
   navigator.usb.getDevices().then(ds=>{const d=ds.find(isCp);if(d)connect(d)});
 }
+}
+start();
 </script>
 </body>
 </html>
