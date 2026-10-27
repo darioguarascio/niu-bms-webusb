@@ -45,6 +45,14 @@ button:disabled{opacity:.5}
 select,button.sec{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem;font-size:.85rem}
 details{margin-top:1rem}summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.6rem;font-size:.75rem;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+.health{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:10px;padding:.75rem .9rem;margin-bottom:1rem}
+.health .verdict{font-weight:700;font-size:1.05rem}
+.health .summary{margin:.15rem 0 0;font-size:.92rem}
+.health ul{margin:.5rem 0 0;padding:0;list-style:none;font-size:.88rem}
+.health li{padding-left:1.1rem;text-indent:-1.1rem}
+.health li{margin:.2rem 0}
+.health li b{font-weight:600}
+.health .fine{font-size:.75rem;color:var(--muted);margin-top:.5rem}
 .hidden{display:none}
 </style>
 </head>
@@ -72,6 +80,7 @@ pre{background:var(--card);border:1px solid var(--line);border-radius:8px;paddin
 <p class="view" id="view"></p>
 </div>
 
+<div class="health hidden" id="health"></div>
 <div class="grid" id="metrics"></div>
 
 <h2>Cell voltages</h2>
@@ -464,11 +473,90 @@ function refresh(){
   else if(isLive)view.innerHTML=`<span class="okc">● Live</span> · ${esc(viewSn)}`;
   else view.innerHTML=j?`<span class="stale">Not connected</span> · showing last stored reading from ${fmtDT(j.t)} · ${esc(viewSn)}`
     :`<span class="stale">Not connected</span> · no stored readings · ${esc(viewSn)}`;
+  renderHealth(j,h);
   renderMetrics(j);
   renderCells(j,h);
   renderStats(h);
   renderIdentity(j);
   drawCharts(h);
+}
+
+// Rule-based health check from the shown reading (j) and the stored readings in range (h).
+// Voltage/temperature based only: it cannot measure capacity or internal resistance.
+function assessHealth(j,h){
+  const out=[]; // {lvl:0 ok,1 warn,2 bad, msg, act}
+  const cells=(j.cells||[]).map((v,i)=>({v,n:i+1})).filter(c=>c.v!=null);
+  if(!cells.length)return out;
+  const atRest=j.current_a==null||Math.abs(j.current_a)<1;
+  const lo=cells.reduce((a,b)=>b.v<a.v?b:a),hi=cells.reduce((a,b)=>b.v>a.v?b:a);
+  const mean=cells.reduce((a,c)=>a+c.v,0)/cells.length;
+  const dmv=Math.round(j.cell_delta*1000);
+  const T=(j.temps||[]).filter(t=>t!=null);
+  const cold=T.length&&Math.min(...T)<5;
+  // Δ is only meaningful at rest and away from empty: the voltage curve is steep near empty
+  const load=!atRest?` (measured under ${fmt(Math.abs(j.current_a),1)} A load, so Δ reads high; recheck at rest)`
+    :lo.v<3.3?' (cells are nearly empty, where Δ reads high; recheck after charging)':'';
+  // Balance
+  if(j.cell_delta>DMED)out.push({lvl:atRest&&lo.v>=3.3?2:1,
+    msg:`Cells out of balance: Δ ${dmv} mV, cell #${lo.n} is ${Math.round((mean-lo.v)*1000)} mV below average${load}.`,
+    act:`Charge to 100 % and leave it on the charger 1–2 h so the BMS can balance. If cell #${lo.n} stays low after a few full charges, have the pack checked: that cell group may be weak.`});
+  else if(j.cell_delta>=DGOOD)out.push({lvl:1,
+    msg:`Slight imbalance: Δ ${dmv} mV${load}.`,
+    act:'Do a full charge and leave it on the charger an extra hour so the BMS can balance.'});
+  else out.push({lvl:0,msg:`Cells balanced (Δ ${dmv} mV).`});
+  // Persistently weak cell over the selected range
+  if(h.length>=20){
+    const cnt={};
+    for(const e of h){const c=cellsOf(e);let mi=-1,mv=Infinity;c.forEach((v,i)=>{if(v!=null&&v<mv){mv=v;mi=i}});if(mi>=0)cnt[mi]=(cnt[mi]||0)+1}
+    const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+    if(top&&top[1]/h.length>=0.8){
+      const cs=cellStats(h),i=+top[0],avgAll=cs.filter(Boolean).reduce((a,s)=>a+s.avg,0)/cs.filter(Boolean).length;
+      const gap=Math.round((avgAll-cs[i].avg)*1000);
+      if(gap>=25)out.push({lvl:1,
+        msg:`Cell #${i+1} is the lowest in ${Math.round(top[1]/h.length*100)} % of readings (avg ${gap} mV below the others).`,
+        act:`Keep an eye on cell #${i+1}: if its gap grows over time, it is the one limiting range.`});
+    }
+  }
+  // Cell voltage limits
+  const charge=cold?'Bring the pack to room temperature, then charge it right away':'Charge now';
+  if(lo.v<3.0)out.push({lvl:2,msg:`Cell #${lo.n} is at ${fmt(lo.v,3)} V: deeply discharged.`,
+    act:`${charge}. Staying below 3.0 V damages lithium cells; if it will not charge, do not force it — have it inspected.`});
+  else if(lo.v<3.3)out.push({lvl:1,msg:`Low charge: lowest cell ${fmt(lo.v,3)} V.`,
+    act:cold?'Bring the pack to room temperature, then recharge.':'Recharge soon; avoid leaving the pack empty.'});
+  if(hi.v>4.22)out.push({lvl:2,msg:`Cell #${hi.n} is at ${fmt(hi.v,3)} V: above the 4.20 V limit.`,
+    act:'Unplug the charger. Check that the charger is the original NIU one; a BMS that lets cells exceed 4.2 V needs inspection.'});
+  // Temperature
+  if(T.length){const tmax=Math.max(...T),tmin=Math.min(...T);
+    if(tmax>55)out.push({lvl:2,msg:`Pack is hot: ${tmax} °C.`,act:'Stop riding/charging and let it cool before using it again.'});
+    else if(tmax>45)out.push({lvl:1,msg:`Pack is warm: ${tmax} °C.`,act:'Let it cool before charging; avoid full-power riding until it does.'});
+    if(tmin<5&&lo.v>=3.3)out.push({lvl:1,msg:`Pack is cold: ${tmin} °C.`,act:'Do not charge below about 5 °C; warm it to room temperature first.'});
+    else if(tmin<5)out.push({lvl:1,msg:`Pack is cold: ${tmin} °C.`});
+  }
+  // Sensing sanity: BMS pack voltage vs sum of cells
+  if(j.pack_v!=null&&j.cell_sum!=null&&Math.abs(j.pack_v-j.cell_sum)>1)
+    out.push({lvl:1,msg:`BMS pack voltage (${fmt(j.pack_v,1)} V) and the sum of cells (${fmt(j.cell_sum,2)} V) differ by ${fmt(Math.abs(j.pack_v-j.cell_sum),2)} V.`,
+      act:'Check with a multimeter: a balance/sense wire or the BMS measurement may be faulty.'});
+  // Wear
+  if(j.cycles!=null&&j.cycles>=500)out.push({lvl:1,msg:`${j.cycles} charge cycles.`,act:'Some capacity loss is normal at this age; expect shorter range.'});
+  return out;
+}
+function renderHealth(j,h){
+  const el=document.getElementById('health');
+  if(!j){el.classList.add('hidden');return}
+  const f=assessHealth(j,h);
+  if(!f.length){el.classList.add('hidden');return}
+  const worst=Math.max(...f.map(x=>x.lvl));
+  const V=[{t:'Healthy',c:'var(--ok)'},{t:'Needs attention',c:'var(--warn)'},{t:'Action needed',c:'var(--bad)'}][worst];
+  const issues=f.filter(x=>x.lvl>0).sort((a,b)=>b.lvl-a.lvl);
+  const lvlC=['var(--ok)','var(--warn)','var(--bad)'];
+  const summary=issues.length
+    ?issues.map(x=>x.msg).join(' ')
+    :`${f.map(x=>x.msg).join(' ')} No problems found${j.cycles!=null?` · ${j.cycles} cycles`:''}.`;
+  el.style.borderLeftColor=V.c;
+  el.innerHTML=`<div class="verdict" style="color:${V.c}">${V.t}</div><p class="summary">${esc(summary)}</p>`
+    +(issues.some(x=>x.act)?`<ul>${issues.filter(x=>x.act).map(x=>`<li><b style="color:${lvlC[x.lvl]}">→</b> ${esc(x.act)}</li>`).join('')}</ul>`:'')
+    +`<div class="fine">Based on cell voltages and temperatures${h.length?` (${h.length} readings in range)`:''}. It cannot measure remaining capacity.</div>`;
+  el.classList.remove('hidden');
 }
 
 function renderMetrics(j){
